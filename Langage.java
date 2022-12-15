@@ -18,6 +18,9 @@ public class Langage {
     String[] opertaion = {"=","!=","<=",">=","<",">","like"};
     String show = "show table";
     String desc = "describe";
+    String update = "update";
+    String set = "set";
+    String delete = "delete";
     Fonction f = new Fonction();
     TableRelationnelle table = new TableRelationnelle();
 
@@ -433,6 +436,153 @@ public class Langage {
     // return false;
     // }
 
+    //-------------------------DELETE--------------------------------
+    boolean checkDelete(String request) throws Exception {
+        String[] split = request.split("\\ ");
+        if(split.length == 3) {
+            if(split[0].compareToIgnoreCase(delete) == 0) {
+                if(split[1].compareToIgnoreCase(vocabulaire[2]) == 0) {
+                    if(isInTable(split[2]) == true) {
+                        return true;
+                    }
+                    else {
+                        throw new Exception("Table ou vue inexixstant : "+split[2]);
+                    }
+                }
+                else {
+                    throw new Exception("Command near "+split[0] +" is invalid");
+                }
+            }
+            else {
+                throw new Exception("Command "+split[0] +" is invalid");
+            }
+        }
+        if(split.length > 3) {
+            boolean fisrt_step = false;
+            if(split[0].compareToIgnoreCase(delete) == 0) {
+                if(split[1].compareToIgnoreCase(vocabulaire[2]) == 0) {
+                    if(isInTable(split[2]) == true) {
+                        fisrt_step = true;
+                    }
+                    if(fisrt_step == true) {
+                        String all_cond = getAllCondition(request);
+                        String[] tab_cond = conditions(all_cond);
+                        try {
+                            if(checkAllCondition(tab_cond, split[2]) == true) {
+                                return true;
+                            }
+                        } catch (Exception e) {
+                            throw new Exception(e.getMessage());
+                        }
+                    }
+                    if(fisrt_step == false) {
+                        throw new Exception("Table ou vue inexixstant : "+split[2]);
+                    }
+                }
+                else {
+                    throw new Exception("Command near "+split[0] +" is invalid");
+                }
+            }
+            else {
+                throw new Exception("Command "+split[0] +" is invalid");
+            }
+        }
+        
+    return false;
+    }
+
+    void delete(String request) throws Exception {
+        String[] split = request.split("\\ ");
+        try {
+            if(checkDelete(request) == true) {
+            String allCond = getAllCondition(request);
+            TableRelationnelle table = new TableRelationnelle(split[2]);
+            String path = table.getPath();
+            String nom_table = split[2];
+            Object[] donne = table.getDonnee();
+                if(split.length == 3) {
+                    f.deleteInFile(path, nom_table, donne[0].toString());
+                }
+                if(split.length > 3) {
+                    TableRelationnelle tablecond = f.selectCond(table, allCond);
+                    TableRelationnelle diff = f.difference(table,tablecond);
+                    TableRelationnelle union = f.union(tablecond, diff);
+                    //f.affTable(union);
+                    f.rewrite(path,nom_table,diff.getDonnee());
+                }
+            }
+        } catch (Exception e) {
+           throw new Exception(e.getMessage());
+        }
+    }
+
+    //-----------------------------------------UPDATE------------------------------------------
+    public boolean checkUpdate(String request) throws Exception {
+        String[] split = request.split("\\ ");
+        boolean contain_where = false;
+        for(int i = 0; i<split.length; i++) {
+            if(split[i].compareToIgnoreCase(vocabulaire[3]) == 0) {
+                contain_where = true;
+            }
+        }
+        if(split[0].compareToIgnoreCase(update) == 0) {
+            if(isInTable(split[1]) == true) {
+                if(split[2].compareToIgnoreCase(set) == 0) {
+                    if(contain_where == true) {
+                        try {
+                            String nom_table =split[1];
+                            String to_update = getValuesInsertion(request);
+                            String condition = getAllCondition(request); 
+                            if(checkAllCondition( conditions(to_update), nom_table ) == true) {
+                                if(checkAllCondition( conditions(condition), nom_table )  == true) {
+                                    return true;
+                                }
+                            }
+                        } catch (Exception e) {
+                            throw new Exception(e.getMessage());
+                        }
+                    }
+                    else{
+                        throw new Exception("No conditions to update");
+                    }
+                }
+                else{
+                    throw new Exception("Command near "+split[1] +" is invalid");
+                }
+            }
+            else {
+                throw new Exception("Table ou vue inexixstant : "+split[1]);
+            }
+        }
+        else{
+            throw new Exception("Command "+ split[0] + " is invalid");
+        }
+    return false;
+    }
+
+    public void update(String request) throws Exception {
+        String[] split = request.split("\\ ");
+        try {
+            if(checkUpdate(request) == true) {
+                String nom_table =split[1];
+                String to_update = getValuesInsertion(request);
+                String condition = getAllCondition(request); 
+                String path = table.getPath();
+                TableRelationnelle table = new TableRelationnelle(nom_table);
+                TableRelationnelle tablecond = f.selectCond(table, condition);
+                TableRelationnelle diff = f.difference(table,tablecond);
+                String[] field_to_update = extract_allfield(to_update);
+                String[] values = extract_allvalues(to_update);
+                f.update(field_to_update, values, tablecond.getDonnee());
+                TableRelationnelle union = f.union(tablecond,diff);
+                //f.affTable(union);
+                f.rewrite(path,nom_table,union.getDonnee());
+            }
+        } catch (Exception e) {
+            throw new Exception(e.getMessage());
+        }
+    }
+
     //-----------------------------------------SELECTION----------------------------------------
     String getAllCondition(String request) throws Exception {
         
@@ -446,7 +596,7 @@ public class Langage {
     return inBrackets;
     }
 
-    String[] conditions(String allCond) throws Exception {
+    String[] conditions(String allCond) {
         //System.out.println("hahahaha" + request);
         //String allCond = getAllCondition(request);
         //System.out.println(allCond);
@@ -454,6 +604,45 @@ public class Langage {
         //System.out.println(split[0]);
     return split;
     }
+
+    //cond sous forme : field = values
+    String extract_field(String cond) {
+        String[] split = cond.split("\\ ");
+        return split[0];
+    }
+
+    String[] extract_allfield(String allcond) {
+        String[] cond = conditions(allcond);
+        Vector <String> val = new Vector <String>();
+        for(int i = 0; i<cond.length; i++) {
+            val.add( extract_field(cond[i]) );
+        }
+        String[] res = new String[val.size()];
+        for (int i = 0; i < res.length; i++) {
+            res[i] = val.get(i).toString();
+        }
+    return res;
+    }
+    
+    String extract_values(String cond) {
+        String[] split = cond.split("\\ ");
+        return split[2];
+    }
+
+    String[] extract_allvalues(String allcond) {
+        String[] cond = conditions(allcond);
+        Vector <String> val = new Vector <String>();
+        for(int i = 0; i<cond.length; i++) {
+            val.add( extract_values(cond[i]) );
+        }
+        String[] res = new String[val.size()];
+        for (int i = 0; i < res.length; i++) {
+            res[i] = val.get(i).toString();
+        }
+    return res;
+    }
+
+
 
     boolean checkOperator(String condition) {
         int count = 0;
@@ -493,9 +682,15 @@ public class Langage {
     return true;
     }
 
-    int countNbJoin(String request_join) {
+    int countNbJoin(String request_join) throws Exception{
         int count = 0;
         String[] split = request_join.split("\\,");
+        if(split.length == 1) {
+            String[] word = split[0].split("\\ ");
+            if(word.length > 2) {
+                throw new Exception("Syntax error : you have to put a coma for a multiple join");
+            }
+        }
         for(int i = 0; i<split.length; i++) {
             String[] word = split[i].split("\\ ");
             for (int j = 0; j < word.length; j++) {
@@ -508,28 +703,35 @@ public class Langage {
     return count;
     }
 
-    String[] nomTableToJoin(String request) {
-        String[] split = request.split("\\ ");
-        String semi_request = split[0]+" "+split[1]+ " " +split[2]+ " " +split[3];
-        int len = semi_request.length();
-        String request_join = request.substring(len+1);
-        String nom_table = getNomTable(request);
-        int alloc = countNbJoin(request_join);
-        if(alloc == 0) {
-            String[] val = new String[ countNbJoin(request_join) + 1];
-            val[0] = nom_table;
-        return val;
-        }
-        String[] val = new String[ countNbJoin(request_join) + 1];
-        val[0] = nom_table;
-        String[] allJoinEnDur = request_join.split("\\,");
-        for(int i = 0; i<allJoinEnDur.length; i++) {
-            String[] word = allJoinEnDur[i].split("\\ ");
-            if(isInTable(word[1]) == true) {
-                val[i+1] = word[1];
-                //System.out.println(val[i+1] + " " +val.length);
+    String[] nomTableToJoin(String request) throws Exception{
+        String[] val = new String[1];
+        try {
+            String[] split = request.split("\\ ");
+            String semi_request = split[0]+" "+split[1]+ " " +split[2]+ " " +split[3];
+            int len = semi_request.length();
+            String request_join = request.substring(len+1);
+            String nom_table = getNomTable(request);
+            int alloc = countNbJoin(request_join);
+            if(alloc == 0) {
+                String[] valtmp = new String[ countNbJoin(request_join) + 1];
+                valtmp[0] = nom_table;
+            return valtmp;
             }
+            val = new String[ countNbJoin(request_join) + 1];
+            val[0] = nom_table;
+            String[] allJoinEnDur = request_join.split("\\,");
+            for(int i = 0; i<allJoinEnDur.length; i++) {
+                String[] word = allJoinEnDur[i].split("\\ ");
+                if(isInTable(word[1]) == true) {
+                    val[i+1] = word[1];
+                    //System.out.println(val[i+1] + " " +val.length);
+                }
+            }
+        } catch (Exception e) {
+            // TODO: handle exception
+            throw new Exception(e.getMessage());
         }
+        
     return val;
     }
 
@@ -843,7 +1045,7 @@ public class Langage {
     }
 
     boolean checkSyntaxe(String request) throws Exception {
-
+        
         // try {
             String[] split = request.split("\\ ");
             //System.out.println("mety");
@@ -871,11 +1073,13 @@ public class Langage {
 
     public void execute(String request) throws Exception {
         String[] split = request.split("\\ ");
+        String first = request.substring(0, 1);
         try {
                 String nom_table = "";
                 if(split.length > 2) {
                     nom_table = getNomTable(request);
                 }
+            if(first.compareToIgnoreCase("s") == 0) {
                 if(checkSyntaxe(request) == true) { 
                     TableRelationnelle all = new TableRelationnelle(nom_table);
                     if(checkSimpleSelect(request) == true) {
@@ -941,9 +1145,10 @@ public class Langage {
                         }
                     }
 
+                }
             }
             
-            String first = request.substring(0, 1);
+            
             //System.out.println(first);
             if(first.compareToIgnoreCase("i") == 0) {
                 if(checkSyntaxeInsertion(request) == true) {
@@ -955,6 +1160,18 @@ public class Langage {
                 if(checkSyntaxeCreation(request) == true) {
                     System.out.println("tafiditra creations");
                     executeCreation(request);
+                }
+            }
+            if(first.compareToIgnoreCase("d") == 0) {
+                if(checkDelete(request) == true) {
+                    delete(request);
+                    System.out.println("tafiditra delete");
+                }
+            }
+            if(first.compareToIgnoreCase("u") == 0) {
+                if(checkUpdate(request) == true) {
+                    update(request);
+                    System.out.println("tafiditra update");
                 }
             }
             if(request.contains("/") == true) {
@@ -987,6 +1204,9 @@ public class Langage {
         } catch (Exception e) {
             System.out.println(e.getMessage());
             e.printStackTrace();
+            if(e.getMessage() == null) {
+                //System.out.println("huhuhu");
+            }
             if(containsChar(e.getMessage()) == true) {
                 System.out.println(e.getMessage());
             }
@@ -995,99 +1215,114 @@ public class Langage {
 
     public Object reponseToRequest(String request) throws Exception {
         String[] split = request.split("\\ ");
+        String first = request.substring(0, 1);
         Object reponse = new Object();
         try {
             String nom_table = "";
                 if(split.length > 2) {
                     nom_table = getNomTable(request);
                 }
-            if(checkSyntaxe(request) == true) { 
-                TableRelationnelle all = new TableRelationnelle(nom_table);
-                if(checkSimpleSelect(request) == true) {
-                    //System.out.println("tafa");
-                    if(split[1].compareToIgnoreCase("*") == 0 ) {   
-                        //f.affTable(all);
-                        reponse = all;
-                    } 
-                    else if(split[1].compareToIgnoreCase("*") != 0 ) {
-                        //System.out.println("nandalo tao");
-                        TableRelationnelle result = f.select(all, split[1]);
-                        //f.aff(result);
-                        reponse = result;
+            if(first.compareToIgnoreCase("s") == 0) {
+                if(checkSyntaxe(request) == true) { 
+                    TableRelationnelle all = new TableRelationnelle(nom_table);
+                    if(checkSimpleSelect(request) == true) {
+                        //System.out.println("tafa");
+                        if(split[1].compareToIgnoreCase("*") == 0 ) {   
+                            //f.affTable(all);
+                            reponse = all;
+                        } 
+                        else if(split[1].compareToIgnoreCase("*") != 0 ) {
+                            //System.out.println("nandalo tao");
+                            TableRelationnelle result = f.select(all, split[1]);
+                            //f.aff(result);
+                            reponse = result;
+                        }
                     }
-                }
-                if( checkSelectWithCondition(request) == true ) {
-                    //System.out.println("mety eeeee");
-                    String allCond = getAllCondition(request);
-                    if(split[1].compareToIgnoreCase("*") == 0 ) {   
-                        TableRelationnelle result = f.selectCond(all, allCond);
-                        //f.aff(result);
-                        reponse = result;
-                    } 
-                    else if(split[1].compareToIgnoreCase("*") != 0 ) {
-                        TableRelationnelle result = f.selectCond(all, split[1], allCond);
-                        //f.aff(result);
-                        reponse = result;
+                    if( checkSelectWithCondition(request) == true ) {
+                        //System.out.println("mety eeeee");
+                        String allCond = getAllCondition(request);
+                        if(split[1].compareToIgnoreCase("*") == 0 ) {   
+                            TableRelationnelle result = f.selectCond(all, allCond);
+                            //f.aff(result);
+                            reponse = result;
+                        } 
+                        else if(split[1].compareToIgnoreCase("*") != 0 ) {
+                            TableRelationnelle result = f.selectCond(all, split[1], allCond);
+                            //f.aff(result);
+                            reponse = result;
+                        }
+                        
+                    }
+                    if(request.contains("join") == true) {
+                        if(checkSelectWithJoin(request) == true) {
+                            //System.out.println("tafa");
+                            String[] nomTableToJoin = nomTableToJoin(request);
+                            Vector allTab = new Vector();
+                            for(int i = 0; i<nomTableToJoin.length; i++) {
+                                //System.out.println(nomTableToJoin[i]);
+                                allTab.add( new TableRelationnelle(nomTableToJoin[i]));
+                            }
+                            TableRelationnelle result = f.jointureMultiple(allTab);
+                            if(split[1].compareToIgnoreCase("*") == 0 ) {   
+                                //f.aff(result);
+                                // System.out.println("tafa");
+                                // f.affTable(result);
+                                reponse = result;
+                            } 
+                            else if(split[1].compareToIgnoreCase("*") != 0 ) {
+                                result = f.select(result, split[1]);
+                                //f.aff(result);
+                                reponse = result;
+                            }    
+                        }
+                        if(checkSelectWithJoinAndCond(request) == true) {
+                            //System.out.println("mety le izy");
+                            String[] nomTableToJoin = nomTableToJoin(request);
+                            Vector allTab = new Vector();
+                            String allCond = getAllCondition(request);
+                            for(int i = 0; i<nomTableToJoin.length; i++) {
+                                allTab.add(new TableRelationnelle(nomTableToJoin[i]));
+                            }
+                            TableRelationnelle result = f.jointureMultiple(allTab);
+                            if(split[1].compareToIgnoreCase("*") == 0 ) { 
+                                result = f.selectCond(result, allCond);  
+                                //f.aff(result);
+                                reponse = result;
+                            } 
+                            else if(split[1].compareToIgnoreCase("*") != 0 ) {
+                                result = f.selectCond(result, split[1],allCond);
+                                //f.aff(result);
+                                reponse = result;
+                            }
+                        }
                     }
                     
                 }
-                if(request.contains("join") == true) {
-                    if(checkSelectWithJoin(request) == true) {
-                        System.out.println("tafa");
-                        String[] nomTableToJoin = nomTableToJoin(request);
-                        Vector allTab = new Vector();
-                        for(int i = 0; i<nomTableToJoin.length; i++) {
-                            //System.out.println(nomTableToJoin[i]);
-                            allTab.add( new TableRelationnelle(nomTableToJoin[i]));
-                        }
-                        TableRelationnelle result = f.jointureMultiple(allTab);
-                        if(split[1].compareToIgnoreCase("*") == 0 ) {   
-                            //f.aff(result);
-                            // System.out.println("tafa");
-                            // f.affTable(result);
-                            reponse = result;
-                        } 
-                        else if(split[1].compareToIgnoreCase("*") != 0 ) {
-                            result = f.select(result, split[1]);
-                            //f.aff(result);
-                            reponse = result;
-                        }    
-                    }
-                    if(checkSelectWithJoinAndCond(request) == true) {
-                        //System.out.println("mety le izy");
-                        String[] nomTableToJoin = nomTableToJoin(request);
-                        Vector allTab = new Vector();
-                        String allCond = getAllCondition(request);
-                        for(int i = 0; i<nomTableToJoin.length; i++) {
-                            allTab.add(new TableRelationnelle(nomTableToJoin[i]));
-                        }
-                        TableRelationnelle result = f.jointureMultiple(allTab);
-                        if(split[1].compareToIgnoreCase("*") == 0 ) { 
-                            result = f.selectCond(result, allCond);  
-                            //f.aff(result);
-                            reponse = result;
-                        } 
-                        else if(split[1].compareToIgnoreCase("*") != 0 ) {
-                            result = f.selectCond(result, split[1],allCond);
-                            //f.aff(result);
-                            reponse = result;
-                        }
-                    }
-                }
-                
             }
-            String first = request.substring(0, 1);
+            
             //System.out.println(first);
             if(first.compareToIgnoreCase("i") == 0) {
                 if(checkSyntaxeInsertion(request) == true) {
                     executeInsertion(request);
-                    reponse = new String("Insertion resussi");
+                    reponse = new String("One row affected");
                 }
             }
             if(first.compareToIgnoreCase("c") == 0) {
                 if(checkSyntaxeCreation(request) == true) {
                     executeCreation(request);
-                    reponse = new String("Table cree");
+                    reponse = new String("Table created");
+                }
+            }
+            if(first.compareToIgnoreCase("d") == 0) {
+                if(checkDelete(request) == true) {
+                    delete(request);
+                    reponse = new String("Delete complete");
+                }
+            }
+            if(first.compareToIgnoreCase("u") == 0) {
+                if(checkUpdate(request) == true) {
+                    update(request);
+                    reponse = new String("Update complete");
                 }
             }
             if(request.contains("/") == true) {
@@ -1125,10 +1360,13 @@ public class Langage {
             if(e.getMessage().compareTo("0") == 0) {
                 reponse = new String("No rows selected");
             }
+            if(e.getMessage() == null) {
+                return  new Erreur("Your syntax may not be correct, please read the documentation for more information.");
+            }
         }
         //System.out.println( "type ***" +reponse.getClass().getTypeName());
         if(reponse.getClass().getTypeName().equals("java.lang.Object")) {
-            System.out.println("tafa");
+            //System.out.println("tafa");
             return  new Erreur("Your syntax may not be correct, please read the documentation for more information.");
         }
     return reponse;

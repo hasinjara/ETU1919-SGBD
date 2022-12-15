@@ -7,10 +7,12 @@ public class Main {
     public static void main(String[] args) {
         Langage myLangage = new Langage();
         try {
-            myLangage.execute("select * from test where [ test = 1 ]");
+            //myLangage.update("update dept set ( location = Mac ) where [ location = os ]");
+            //myLangage.execute("delete from dept where [ location = test ]");
+            //myLangage.execute("select * from test where [ test = 1 ]");
             //myLangage.execute("show table");
             //myLangage.execute("describe dept");
-            //myLangage.execute("select * from emp join emp,join salaire");
+            //myLangage.execute("select * from emp join emp join salaire");
             //myLangage.execute("alaina * ao_@ module");
             //myLangage.execute( "select id_S,id_M from stagiere/select id_M from module" );
             //myLangage.execute("alaina nom,numero_sal,valeur ao_@ emp atambatra_@ dept,atambatra_@ salaire ka [ numero_emp misy 1,nom misy o ]");

@@ -1,4 +1,5 @@
-package socket;
+package socket.serveur;
+import socket.thread.*;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;

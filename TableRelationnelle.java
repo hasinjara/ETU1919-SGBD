@@ -38,6 +38,7 @@ public class TableRelationnelle implements Serializable{
     }
 
 
+
     public String getNom() {
         return nom;
     }

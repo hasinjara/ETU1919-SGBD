@@ -1,4 +1,5 @@
-package socket;
+package socket.thread;
+import socket.serveur.*;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.InputStreamReader;

@@ -1,127 +1,47 @@
-alaina * ao_@ table ka field=valeur;
+--les types possible
+	.String
+	.double
+	.int
+	.float
+--les conditions possible  = , != , <= , >= , < , > ,like
+--Il faut respecter les espaces pour le faire marcher correctement
 
-String getType(Object[] lo, String field) {
-        String val = new String();
-        String attr = lo[0].toString();
-        String[] fieldsAndTypes = attr.split("\\,");
-        for(int i = 0; i<lo.length; i++) {
-            for(int j = 0; j<fieldsAndTypes.length  ; j++) {
-                String[] fields = fieldsAndTypes[i].split("\\ ");
-                if(field.compareToIgnoreCase(fields[1]) == 0) {
-                    return fields[0];
-                }
-            }
-        }
-    return val;
-    }
+1 - Creation table
+create table nom_table ( String c1,double c2,int c3,float c4 )
+warning:il faut respecter les espaces
 
-    String to_ecriture(Object[] lo, String field) {
-        String[] attr_select = field.split("\\,");
-        String s = "";
-        for(int i = 0; i<attr_select.length; i++) {
-            s = s + (getType(lo, attr_select[i]) + " " + attr_select[i]) + ",";
-        }
-        int len = s.length();
-        s = s.substring(0, len-1);
-        //System.out.println(s);
-    return s;
-    }
+2 - Insertion donne
+insert into nom_table ( test,1,2,3 ) 
+warning:il faut respecter les espaces
 
+4 - Modification donne
+update nom_table set ( c1 = update,c2 = 0 ) where [ c3 = 1 ]
+warning:il faut respecter les espaces
 
-    public Object[] select(Object[] lo, String field) {
-        //System.out.println("tafa");
-        Vector v = new Vector();
-        String[] attr_select = field.split("\\,");
-        String attr = lo[0].toString();
-        String ecriture = to_ecriture(lo, field);
-        v.add(ecriture);
-        String[] fieldsAndTypes = attr.split("\\,");
+5 - Supression donne
+delete from nom_table where [ c3 = 1 ]
+delete from nom_table
+warning:il faut respecter les espaces
 
-        for(int j = 1; j < lo.length; j++) {
-            String[] data = lo[j].toString().split("\\,");
-            //System.out.println(lo[j]);
-            for(int i = 0; i < fieldsAndTypes.length; i++) {
-                String[] fields = fieldsAndTypes[i].split("\\ ");
-                for(int u = 0; u<attr_select.length; u++) {
-                    //System.out.println(attr_select[u]+" "+fields[1] );
-                    // field[0] : type anle field
-                    // field[1] : nom anle field
-                    if(attr_select[u].compareToIgnoreCase(fields[1]) == 0) {
-                        String type = fields[0];
-                        String value = data[i]; 
-                        System.out.println(data[i]);
-                        v.add(data[i]);
-                        //System.out.println( fields[1] + " : " + data[i] );
-                    }
-                }
-            }
-        }
-    return v.toArray();
-    }
+6 - voir tout les tables
+show table
 
-public void aff_select(Object[] lo, String field) {
-        for (int i = 0; i < lo.length; i++) {
-            aff_o(lo[i], field);
-        }
-    }
+7 - decrire une table
+describe nom_table 
 
-public void aff_o(Object o) {
-        try {
-            //System.out.println("hahaa");
-            Field[] fields = o.getClass().getDeclaredFields();
-            //System.out.println(o.getClass().getDeclaredFields()[0]);
-            System.out.println("---------------------");
-            for(int i = 0; i<fields.length; i++) {
-                fields[i].setAccessible(true);
-                System.out.println( fields[i].getName() + " : " + fields[i].get(o));
-            }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
+8 - selection
+select * from nom_table
+select c1,c2 from nom_table
+warning:il faut respecter les espaces
 
-    public void aff_o(Object o, String field) {
-        try {
-            //System.out.println("hahaa");
-            Field[] fields = o.getClass().getDeclaredFields();
-            //System.out.println(o.getClass().getDeclaredFields()[0]);
-            System.out.println("---------------------");
-            String[] split = field.split("\\,");
-            for(int i = 0; i<fields.length; i++) {
-                fields[i].setAccessible(true);
-                for(int j = 0; j<split.length; j++) {
-                    if(split[j].compareToIgnoreCase(fields[i].getName()) == 0) {
-                        System.out.println( fields[i].getName() + " : " + fields[i].get(o));
-                    }
-                }     
-            }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-    }
+9 - selection avec condition (multiple)
+select * from nom_table where [ c1 = test,c2 = 1,c3 = 2 ]
+select c1,c2 from nom_table [ c1 like test ]
+warning:il faut respecter les espaces
 
-public Object[] find(Object[][] tables, String nom_table){
-        Vector val = new Vector();
-        for(int i = 0; i<tables.length; i++) {
-            for (int j = 0; j < tables[i].length; j++) {
-                if(nom_table.compareToIgnoreCase( tables[i][j].getClass().getSimpleName() ) == 0) {
-                    
-                    //System.out.println(tables[i][j].getClass().getSimpleName() );
-                    return tables[i];
-                }
-            }
-        }
-        Object[] obj = val.toArray();
-    return obj;
-    }
-{"=","!=","<=",">=","<",">","misy"};
-int countNbJoin(String request_join) {
-        int count = 0;
-        String[] split = request_join.split("\\,");
-        for(int i = 0; i<split.length; i++) {
-            if(split[i].compareToIgnoreCase(jointure) == 0) {
-                count ++;
-            }
-        }
-    return count;
-    }
+10 - jointure (jointure naturelle multiple) 
+jointure naturelle : jointure qui ne s'applique que sur les colonnes qui ont les memes noms
+select * from nom_table1 join nom_table2,join nom_table3,...,join nom_tablen
+remarque : on peut appliquer les conditions et les projections sur la jointure
+warning:il faut respecter les espaces
+

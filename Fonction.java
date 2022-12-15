@@ -156,7 +156,7 @@ public class Fonction {
             }
         }
         System.out.println(bordrure(table, data));
-        //System.out.println(generate("-",maxsize+numberOfcol-1)+"+");
+        System.out.println("rows: " + (data.length-1));
     }
 
     String generate(String ch,int n) {
@@ -240,7 +240,90 @@ public class Fonction {
     return val;
     }
 
-    
+    int getColumn(String field, Object[] data) {
+        String reference = data[0].toString();
+        String[] split = reference.split("\\,");
+        for(int i = 0; i<split.length; i++) {
+            String[] type_name = split[i].split("\\ ");            //type_name[0]=type type_name[1]=name
+            if(field.compareToIgnoreCase(type_name[1]) == 0) {
+                return i;
+            }
+        }
+    return 0; 
+    }
+
+    int[] getColumn(String[] field, Object[] data) {
+        Vector val = new Vector ();
+        for(int i = 0; i<field.length; i++) {
+            val.add(  getColumn(field[i], data) );
+        }
+        int[] res = new int[val.size()];
+        for(int i = 0; i<res.length; i++) {
+            res[i] = (int)val.get(i);
+        }
+    return res;
+    }
+
+    String updateOneCol(String oneValue,int ind, Object line ) {
+        //System.out.println("taloha "+line);
+        String[] split = line.toString().split("\\,");
+        String val = "";
+        for (int i = 0; i < split.length; i++) {
+            if(i == ind) {
+                split[i] = oneValue; 
+            }
+            val =  val + split[i]+"," ;
+        }
+        val = val.substring(0, val.length()-1);
+        return val;
+        //System.out.println(line);
+    }
+
+    public void update(String[] field,String[] values, Object[] data) {
+        int[] ind_update = getColumn(field, data);
+        Object[] val = new Object[data.length];
+        val[0] = data[0];
+        for (int i = 1; i < data.length; i++) {
+            String[] split = data[i].toString().split("\\,");
+            for (int j2 = 0; j2 < ind_update.length; j2++) {
+                data[i]  =  updateOneCol(values[j2], ind_update[j2], data[i]);
+            }
+            //System.out.println(data[i]);
+        }
+    }
+
+    public void deleteInFile(String path ,String nom,String value) {
+        File creation = new File(path+nom);
+        try(BufferedWriter writer=new BufferedWriter(new FileWriter(creation) )) 
+        {   
+            writer.write(value);
+            writer.newLine();
+            writer.flush();
+            //writer.close();
+        }
+        catch(IOException a) 
+        {   
+            System.out.println(a.getMessage());
+            a.printStackTrace();
+        }
+    }
+
+    public void rewrite(String path ,String nom,Object[] data) {
+        File creation = new File(path+nom);
+        try(BufferedWriter writer=new BufferedWriter(new FileWriter(creation) )) 
+        {   
+            for(int i = 0 ; i<data.length; i++) {
+                writer.write(data[i].toString());
+                writer.newLine();
+            }
+            writer.flush();
+        }
+        catch(IOException a) 
+        {   
+            System.out.println(a.getMessage());
+        }   
+           
+    }
 
     public void createFile(String path ,String nom, String attribute) {
         //System.out.println(emplacement.getAbsolutePath()+"\\\\"+nom);
@@ -387,6 +470,13 @@ public class Fonction {
             }
         }
     return new TableRelationnelle(table1.getNom(), val.toArray() ); 
+    }
+
+    public TableRelationnelle union(TableRelationnelle table1, TableRelationnelle table2) {
+        TableRelationnelle val = new TableRelationnelle();
+        val.setNom(table1.getNom());
+        val.setDonnee(union(table1.getDonnee(), table2.getDonnee()) );
+    return val;
     }
 
     Object[] union(Object[] obj1, Object[] obj2 ) {
